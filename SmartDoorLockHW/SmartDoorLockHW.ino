@@ -1,20 +1,28 @@
 #include <SPI.h>
-#include <SD.h>
 #include <WiFi.h>
+#include <SD.h>
+
 #define PORT 8081
 
 String SERIAL_NO ="SMARTDOORLOCK_29"; // 도어락 시리얼 넘버 원래는 상수로 저장해야 되는데 일단은 이렇게 해놨다.
-char server[] = "192.168.0.10";
+char server1[] = "192.168.0.10"; //스프링 웹서버 iP
 
 char ssid[] = "Yoon01";      //  your network SSID (name)
 char pass[] = "xodud15*";   // your network password
 
 int status = WL_IDLE_STATUS;
+
 WiFiClient client;
 File myFile;
 
 String key_id="WCq96GtQqlrJw4";  //NFC를 통해 받을 key_id를 저장할 변수
 String DATA=""; // HTTP통신을 통해 임시로 저장하기 위해 선언한 변수
+
+unsigned long lastConnectionTime = 0;            // 서버에 마지막으로 연결한 시간
+const unsigned long postingInterval = 1800000; // 30분에 한번씩 리스트 갱신한다.
+
+boolean connected = true;
+
 
 void setup() {
     Serial.begin(9600);
@@ -28,19 +36,19 @@ void setup() {
       Serial.println(ssid);
       status = WiFi.begin(ssid, pass);
       //status = WiFi.begin(ssid);
-      delay(10000);
-    }
-    Serial.println(F("Connected"));
+      delay(1000);
+    }                 
+    Serial.println(F("Wifi Connected"));
+    
 }
 
 void loop() {
-
-   // 서버에서 읽어온 것이 있을때 실행된다.
+    unsigned long currentMillis = millis(); 
    // 이 조건문은 OK가 떨어지면 문을 열어준다. -> 다시 서버에 요청해 키 리스트를 SD카드에 최신으로 업데이트 한다.
     if(DATA!=""){       
         if(DATA=="OK"){
            Serial.println(F("\nOpen the Door!!!!!!!!!!!!"));
-           KeyListhttpRequest(); // 키 리스트 요청 
+           KeyListhttpRequest(); // 키 리스트 요청
          }
          else if(DATA=="FAIL"){
              Serial.println(F("\nNot Open the Door~~~~"));
@@ -53,46 +61,52 @@ void loop() {
      }
       
   
-    // NFC값이 들어 왔을 때
-     if (Serial.available()) {
-          long value = Serial.parseInt();
-          //인터넷이 연결된 상태면
-          if(value == 1){
-              keyExistHttpRequest(key_id);  // 도어락 키 존재 여부 확인
-          } 
-          else if(value == 2){  // 연결상태가 아니면
-               readFile();  // SD카드에서 JSON을 가져온다.
-               if(parseJson(DATA,key_id)){
-                   Serial.println(F("\nOpen the Door!!!!!!!!!!!! "));
-                   DATA = "";
-               } else{
-                    Serial.println(F("\nNot Open the Door~~~~"));
-                   DATA = "";
-               }
+        // NFC값이 들어 왔을 때
+         if (Serial.available()) {
+              long value = Serial.parseInt();
+              //인터넷이 연결된 상태면
+              if(value == 1){
+                  keyExistHttpRequest(key_id);  // 도어락 키 존재 여부 확인
+              } 
+              else if(value == 2){  // 연결상태가 아니면
+                   readFile();  // SD카드에서 JSON을 가져온다.
+                   if(parseJson(DATA,key_id)){
+                       Serial.println(F("\nOpen the Door!!!!!!!!!!!! "));
+                       DATA = "";
+                   } else{
+                        Serial.println(F("\nNot Open the Door~~~~"));
+                       DATA = "";
+                   }
+              } 
           }
-      }
-  
-      // 서버에서 데이터를 읽어와 출력및 문자열로 만든다.
-      // 반드시 여기에 있어야 한다.
-      while (client.available()) {
-          char c = client.read();
-          Serial.write(c); //읽은 내용 볼때, 실제 서비스시에는 메모리 때문이라도 없애는게 좋을 듯
-          DATA+=c;
-      }
+
+          while (client.available()) {
+              char c = client.read();
+              Serial.write(c); //읽은 내용 볼때, 실제 서비스시에는 메모리 때문이라도 없애는게 좋을 듯
+              DATA+=c;
+          }
+
+          // 몇 분에 한번씩 리스트를 갱신한다.
+          if (millis() - lastConnectionTime > postingInterval) {
+               KeyListhttpRequest();
+          }
+      
 }
 
 void keyExistHttpRequest(String key_id) {
    DATA = "";
    client.stop();
     String url = "POST /hw/key/check?serial_no="+SERIAL_NO+"&key_id="+key_id;
-   if (client.connect(server, PORT)) {
+   if (client.connect(server1, PORT)) {
     Serial.println(F("\nconnecting..."));
     client.println(url);
     client.println("HTTP/1.1");
     client.println("Connection: close");
     client.println();
+
    }else {
     Serial.println(F("connection failed"));
+    
   }
 }
 
@@ -100,12 +114,14 @@ void KeyListhttpRequest() {
      DATA = "";  //OK삭제
      client.stop();
       String url = "POST /hw/key/list?serial_no="+SERIAL_NO;
-     if (client.connect(server, PORT)) {
+     if (client.connect(server1, PORT)) {
       Serial.println(F("\nconnecting..."));
       client.println(url);
       client.println("HTTP/1.1");
       client.println("Connection: close");
       client.println();
+
+      lastConnectionTime = millis();
      }else {
       Serial.println(F("connection failed"));
     }
