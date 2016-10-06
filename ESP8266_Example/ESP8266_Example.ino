@@ -47,77 +47,61 @@ The default size of the buffer is 64. Change it into a bigger number, like 256 o
 */
 
 
-#define SSID       ""
-#define PASSWORD   ""
-
+#define SSID       "Yoon01"
+#define PASSWORD   "xodud15*"
 #define server      "192.168.0.10" 
 
 
 #include "uartWIFI.h"
-#include <SoftwareSerial.h>
+//#include <SoftwareSerial.h>
 WIFI wifi;
-
-
-
-
+String SERIAL_NO ="SMARTDOORLOCK_29";
 unsigned long lastConnectionTime = 0;          // last time you connected to the server, in milliseconds
 boolean lastConnected = false;                 // state of the connection last time through the main loop
 const unsigned long postingInterval = 8*1000;  // delay between updates, in milliseconds
 
 void setup()
 {
-  
+
   wifi.begin();
   bool b = wifi.Initialize(STA, SSID, PASSWORD);
   if(!b)
   {
-    DebugSerial.println("Init error");
-    
+    Serial.println("Init error");   
   }
   delay(8000);  
   String ipstring  = wifi.showIP();
-
-  DebugSerial.println(ipstring);
   
-  pinMode(13,OUTPUT);
+  Serial.println(ipstring);
+  Serial.println("connected");
+
 }
 void loop()
 {
   char message[320];
-   // if you're not connected, and ten seconds have passed since
-  // your last connection, then connect again and send data:
   if((millis() - lastConnectionTime > postingInterval)) {
     httpRequest();
   } 
-  
-  // if there's incoming data from the net connection.
-  // send it out the serial port.  This is for debugging
-  // purposes only:
+
+
   if(wifi.ReceiveMessage(message)) 
   {
-      DebugSerial.println(message);   
+      Serial.println(message);   
   }
-
-
   delay(10);
 }
 
 // this method makes a HTTP connection to the server:
 void httpRequest() {
   // if there's a successful connection:
-  if (wifi.ipConfig(TCP,server, 8081)) {
-    DebugSerial.println("connecting...");
-    // send the HTTP PUT request:
-    
-    //wifi.Send("GET / HTTP/1.0\r\n\r\n");
-    wifi.Send("GET /wifi/arduino/test HTTP/1.0\r\n\r\n");
-    // note the time that the connection was made:
+  if (wifi.ipConfig(TCP,server,8081)) {
+    Serial.println("connecting...");
+    wifi.Send("POST /hw/key/list?serial_no="+SERIAL_NO+" HTTP/1.0\r\n\r\n" );
     lastConnectionTime = millis();
   } 
   else {
-    // if you couldn't make a connection:
-    DebugSerial.println("connection failed");
-    DebugSerial.println("disconnecting.");
+    Serial.println("connection failed");
+    Serial.println("disconnecting.");
     wifi.closeMux();
   }
 }

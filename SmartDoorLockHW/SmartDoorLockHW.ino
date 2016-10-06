@@ -1,11 +1,11 @@
-#include <SPI.h>
+#include "SPI.h"
 #include <WiFi.h>
 #include <SD.h>
 
-#define PORT 8081
+#define PORT 12604
 
-String SERIAL_NO ="SMARTDOORLOCK_29"; // 도어락 시리얼 넘버 원래는 상수로 저장해야 되는데 일단은 이렇게 해놨다.
-char server1[] = "192.168.0.10"; //스프링 웹서버 iP
+String SERIAL_NO ="SMARTDOORLOCK_28"; // 도어락 시리얼 넘버 원래는 상수로 저장해야 되는데 일단은 이렇게 해놨다.
+char server1[] = "211.239.124.243"; //스프링 웹서버 iP
 
 char ssid[] = "Yoon01";      //  your network SSID (name)
 char pass[] = "xodud15*";   // your network password
@@ -15,7 +15,7 @@ int status = WL_IDLE_STATUS;
 WiFiClient client;
 File myFile;
 
-String key_id="WCq96GtQqlrJw4";  //NFC를 통해 받을 key_id를 저장할 변수
+String key_id="lNfxNDfI1TpI";  //NFC를 통해 받을 key_id를 저장할 변수
 String DATA=""; // HTTP통신을 통해 임시로 저장하기 위해 선언한 변수
 
 unsigned long lastConnectionTime = 0;            // 서버에 마지막으로 연결한 시간
