@@ -1,21 +1,26 @@
 #include "SPI.h"
 #include <WiFi.h>
 #include <SD.h>
+#include <SoftwareSerial.h> //시리얼 통신 라이브러리 호출
 
 #define PORT 12604
 
-String SERIAL_NO ="SMARTDOORLOCK_28"; // 도어락 시리얼 넘버 원래는 상수로 저장해야 되는데 일단은 이렇게 해놨다.
+String SERIAL_NO ="SMARTDOORLOCK_27"; // 도어락 시리얼 넘버 원래는 상수로 저장해야 되는데 일단은 이렇게 해놨다.
 char server1[] = "211.239.124.243"; //스프링 웹서버 iP
 
 char ssid[] = "Yoon01";      //  your network SSID (name)
 char pass[] = "xodud15*";   // your network password
 
 int status = WL_IDLE_STATUS;
-
 WiFiClient client;
 File myFile;
 
-String key_id="lNfxNDfI1TpI";  //NFC를 통해 받을 key_id를 저장할 변수
+int blueTx=2;   //Tx (보내는핀 설정)
+int blueRx=3;   //Rx (받는핀 설정)
+
+SoftwareSerial mySerial(blueTx, blueRx);  //시리얼 통신을 위한 객체선언
+
+String key_id="";  //NFC를 통해 받을 key_id를 저장할 변수
 String DATA=""; // HTTP통신을 통해 임시로 저장하기 위해 선언한 변수
 
 unsigned long lastConnectionTime = 0;            // 서버에 마지막으로 연결한 시간
@@ -26,6 +31,7 @@ boolean connected = true;
 
 void setup() {
     Serial.begin(9600);
+     mySerial.begin(9600); //블루투스 시리얼 개방
    // 이거 지우면 안됨 , SD카드 안열린다.
     if (!SD.begin(4)) {
       return;
@@ -59,27 +65,31 @@ void loop() {
              DATA = "";
          }
      }
-      
-  
-        // NFC값이 들어 왔을 때
-         if (Serial.available()) {
-              long value = Serial.parseInt();
-              //인터넷이 연결된 상태면
-              if(value == 1){
-                  keyExistHttpRequest(key_id);  // 도어락 키 존재 여부 확인
-              } 
-              else if(value == 2){  // 연결상태가 아니면
-                   readFile();  // SD카드에서 JSON을 가져온다.
-                   if(parseJson(DATA,key_id)){
-                       Serial.println(F("\nOpen the Door!!!!!!!!!!!! "));
-                       DATA = "";
-                   } else{
-                        Serial.println(F("\nNot Open the Door~~~~"));
-                       DATA = "";
-                   }
-              } 
-          }
+    
+      while(mySerial.available()) {  //myString 값이 있다면
+          char myChar = (char)mySerial.read();  //mySerial int 값을 char 형식으로 변환
+          key_id+=myChar;
+          delay(5);   
+          Serial.println("input value: "+key_id); //시리얼모니터에 myString값 출력
+      }
 
+        if( key_id.length() == 6  && status == WL_CONNECTED){  //연결 상태이면서 key_id 길이가 일치할때
+              keyExistHttpRequest(key_id);  // 도어락 키 존재 여부 확인
+              key_id = "";
+         } else if(key_id.length() == 6 && status != WL_CONNECTED){  // 연결상태가 아니면
+              Serial.println(F("\n Not connect WIFI!!!!!!!!!!!! "));
+              readFile();  // SD카드에서 JSON을 가져온다.
+              
+               if(parseJson(DATA,key_id)){
+                   Serial.println(F("\nOpen the Door!!!!!!!!!!!! "));
+                   DATA = "";
+               } else{
+                    Serial.println(F("\nNot Open the Door~~~~"));
+                   DATA = "";
+               }
+               key_id="";
+         } 
+         
           while (client.available()) {
               char c = client.read();
               Serial.write(c); //읽은 내용 볼때, 실제 서비스시에는 메모리 때문이라도 없애는게 좋을 듯
@@ -103,7 +113,6 @@ void keyExistHttpRequest(String key_id) {
     client.println("HTTP/1.1");
     client.println("Connection: close");
     client.println();
-
    }else {
     Serial.println(F("connection failed"));
     
@@ -163,7 +172,6 @@ void writeFile(){
 
 // JSON 파서, 주로 인터넷 끊겼을시 파일을 읽어 검사할때 쓰인다.
 boolean parseJson(String resultText, String key_id) {
-  // Parsing according to the json.org structures
   String jsonString = resultText;
   String key = key_id;
   String temp = "";
