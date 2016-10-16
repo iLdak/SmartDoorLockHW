@@ -70,7 +70,7 @@ void loop() {
           char myChar = (char)mySerial.read();  //mySerial int 값을 char 형식으로 변환
           key_id+=myChar;
           delay(5);   
-          Serial.println("input value: "+key_id); //시리얼모니터에 myString값 출력
+//          Serial.println("input value: "+key_id); //시리얼모니터에 myString값 출력
       }
 
         if( key_id.length() == 6  && status == WL_CONNECTED){  //연결 상태이면서 key_id 길이가 일치할때
@@ -89,7 +89,6 @@ void loop() {
                }
                key_id="";
          } 
-         
           while (client.available()) {
               char c = client.read();
               Serial.write(c); //읽은 내용 볼때, 실제 서비스시에는 메모리 때문이라도 없애는게 좋을 듯
@@ -97,7 +96,7 @@ void loop() {
           }
 
           // 몇 분에 한번씩 리스트를 갱신한다.
-          if (millis() - lastConnectionTime > postingInterval) {
+          if (millis() - lastConnectionTime > postingInterval && status == WL_CONNECTED) {
                KeyListhttpRequest();
           }
       
