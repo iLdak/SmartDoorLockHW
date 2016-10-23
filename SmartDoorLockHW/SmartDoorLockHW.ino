@@ -5,7 +5,7 @@
 
 #define PORT 12604
 
-String SERIAL_NO ="SMARTDOORLOCK_27"; // 도어락 시리얼 넘버 원래는 상수로 저장해야 되는데 일단은 이렇게 해놨다.
+String SERIAL_NO ="SMARTDOORLOCK_20"; // 도어락 시리얼 넘버 원래는 상수로 저장해야 되는데 일단은 이렇게 해놨다.
 char server1[] = "211.239.124.243"; //스프링 웹서버 iP
 
 char ssid[] = "Yoon01";      //  your network SSID (name)
@@ -31,6 +31,7 @@ boolean connected = true;
 
 void setup() {
     Serial.begin(9600);
+    pinMode(8,OUTPUT);
      mySerial.begin(9600); //블루투스 시리얼 개방
    // 이거 지우면 안됨 , SD카드 안열린다.
     if (!SD.begin(4)) {
@@ -53,6 +54,9 @@ void loop() {
    // 이 조건문은 OK가 떨어지면 문을 열어준다. -> 다시 서버에 요청해 키 리스트를 SD카드에 최신으로 업데이트 한다.
     if(DATA!=""){       
         if(DATA=="OK"){
+          digitalWrite(8,HIGH);
+          delay(200);
+          digitalWrite(8,LOW);
            Serial.println(F("\nOpen the Door!!!!!!!!!!!!"));
            KeyListhttpRequest(); // 키 리스트 요청
          }
@@ -73,7 +77,8 @@ void loop() {
 //          Serial.println("input value: "+key_id); //시리얼모니터에 myString값 출력
       }
 
-        if( key_id.length() == 6  && status == WL_CONNECTED){  //연결 상태이면서 key_id 길이가 일치할때
+        if( key_id.length() == 10  && status == WL_CONNECTED){  //연결 상태이면서 key_id 길이가 일치할때
+              Serial.println("input value: "+key_id);
               keyExistHttpRequest(key_id);  // 도어락 키 존재 여부 확인
               key_id = "";
          } else if(key_id.length() == 6 && status != WL_CONNECTED){  // 연결상태가 아니면
@@ -89,6 +94,7 @@ void loop() {
                }
                key_id="";
          } 
+         
           while (client.available()) {
               char c = client.read();
               Serial.write(c); //읽은 내용 볼때, 실제 서비스시에는 메모리 때문이라도 없애는게 좋을 듯
