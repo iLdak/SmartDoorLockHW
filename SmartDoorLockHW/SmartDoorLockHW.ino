@@ -54,9 +54,9 @@ void loop() {
    // 이 조건문은 OK가 떨어지면 문을 열어준다. -> 다시 서버에 요청해 키 리스트를 SD카드에 최신으로 업데이트 한다.
     if(DATA!=""){       
         if(DATA=="OK"){
-          digitalWrite(8,HIGH);
-          delay(200);
-          digitalWrite(8,LOW);
+           digitalWrite(8,HIGH);
+           delay(200);
+           digitalWrite(8,LOW);
            Serial.println(F("\nOpen the Door!!!!!!!!!!!!"));
            KeyListhttpRequest(); // 키 리스트 요청
          }
@@ -70,11 +70,10 @@ void loop() {
          }
      }
     
-      while(mySerial.available()) {  //myString 값이 있다면
+      while(mySerial.available()) {  
           char myChar = (char)mySerial.read();  //mySerial int 값을 char 형식으로 변환
           key_id+=myChar;
           delay(5);   
-//          Serial.println("input value: "+key_id); //시리얼모니터에 myString값 출력
       }
 
         if( key_id.length() == 10  && status == WL_CONNECTED){  //연결 상태이면서 key_id 길이가 일치할때
@@ -96,8 +95,8 @@ void loop() {
          } 
          
           while (client.available()) {
-              char c = client.read();
-              Serial.write(c); //읽은 내용 볼때, 실제 서비스시에는 메모리 때문이라도 없애는게 좋을 듯
+             char c = client.read();
+             Serial.write(c); //읽은 내용 볼때, 실제 서비스시에는 메모리 때문이라도 없애는게 좋을 듯
               DATA+=c;
           }
 
