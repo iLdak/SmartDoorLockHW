@@ -8,8 +8,10 @@
 String SERIAL_NO ="SMARTDOORLOCK_20"; // 도어락 시리얼 넘버 원래는 상수로 저장해야 되는데 일단은 이렇게 해놨다.
 char server1[] = "211.239.124.243"; //스프링 웹서버 iP
 
-char ssid[] = "Yoon01";      //  your network SSID (name)
-char pass[] = "xodud15*";   // your network password
+//char ssid[] = "SK_WiFiGIGA0679";      //  your network SSID (name)
+//char pass[] = "1606004292";   // your network password
+char ssid[] = "U+ Zone";      //  your network SSID (name)
+char pass[] = "lguplus100";   // your network password
 
 int status = WL_IDLE_STATUS;
 WiFiClient client;
@@ -32,6 +34,7 @@ boolean connected = true;
 void setup() {
     Serial.begin(9600);
     pinMode(8,OUTPUT);
+    pinMode(10, OUTPUT);
      mySerial.begin(9600); //블루투스 시리얼 개방
    // 이거 지우면 안됨 , SD카드 안열린다.
     if (!SD.begin(4)) {
@@ -45,13 +48,20 @@ void setup() {
       //status = WiFi.begin(ssid);
       delay(1000);
     }                 
+
     Serial.println(F("Wifi Connected"));
+    
     
 }
 
 void loop() {
     unsigned long currentMillis = millis(); 
    // 이 조건문은 OK가 떨어지면 문을 열어준다. -> 다시 서버에 요청해 키 리스트를 SD카드에 최신으로 업데이트 한다.
+    if(status == WL_CONNECTED){
+      digitalWrite(10, HIGH);
+      delay(1000);
+    }
+
     if(DATA!=""){       
         if(DATA=="OK"){
            digitalWrite(8,HIGH);
